@@ -6,3 +6,4 @@ python-dotenv
 qrcode
 Pillow
 pymongo[srv]
+certifi
