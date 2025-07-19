@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Admin Dashboard</h1>
+</div>
+
+<!-- ==================== LIVE QR SCANNER ==================== -->
+<div class="card mb-4 border-primary">
+    <div class="card-header bg-primary text-white">
+        <strong>Live QR Code Scanner</strong>
+    </div>
+    <div class="card-body text-center">
+        <!-- The div for the camera feed -->
+        <div id="qr-reader" style="width: 100%; max-width: 400px; margin: 0 auto;"></div>
+        
+        <!-- The div to show real-time status -->
+        <div id="verification-status-alert" class="alert mt-3" style="display: none;"></div>
+        
+        <div class="mt-3">
+            <button id="start-scan-btn" class="btn btn-success">Start Camera</button>
+            <button id="stop-scan-btn" class="btn btn-danger" style="display: none;">Stop Camera</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== MANUAL BACKUP ==================== -->
+<div class="card mb-4">
+    <div class="card-header">Manual Token Entry (Backup)</div>
+    <div class="card-body">
+        <form id="verify-token-form">
+            <div class="mb-3">
+                <label for="token-input" class="form-label">Enter Token ID</label>
+                <input type="text" class="form-control" id="token-input" placeholder="Enter token if scanner fails">
+            </div>
+            <button type="submit" class="btn btn-secondary">Verify Manually</button>
+        </form>
+        <div id="manual-verify-result" class="mt-3"></div>
+    </div>
+</div>
+
+<!-- Daily Registrations Table (no changes here) -->
+<h3 class="mt-5">Today's Meal Registrations</h3>
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Student Name</th>
+                <th>Roll Number</th>
+                <th>Meal Item</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if registrations and registrations|length > 0 %}
+                {% for reg in registrations %}
+                <tr>
+                    <td>{{ reg.user_name }}</td>
+                    <td>{{ reg.user_roll_number }}</td>
+                    <td>{{ reg.meal_details.item_name }}</td>
+                    <td>
+                        <span class="badge {{ 'bg-success' if reg.is_used else 'bg-warning text-dark' }}">
+                            {{ 'Used' if reg.is_used else 'Not Used' }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="4" class="text-center">No meal registrations for today yet.</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}
+
+<!-- This script block is crucial -->
+{% block scripts %}
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+{% endblock %}

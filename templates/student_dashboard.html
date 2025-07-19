@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Student Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Welcome, {{ user_data.name }}!</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary">Points: <span id="user-points">{{ "%.2f"|format(user_data.points) }}</span></button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== NEW SECTION: ACTIVE TOKENS ==================== -->
+<h3 class="mt-4 text-success">Your Active Tokens for Today</h3>
+{% if active_tokens and active_tokens|length > 0 %}
+    <div class="row">
+        {% for token in active_tokens %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card text-center">
+                <div class="card-header">
+                    <strong>{{ token.meal_details.item_name }}</strong>
+                </div>
+                <div class="card-body">
+                    <img src="data:image/png;base64,{{ token.qr_code }}" alt="QR Code" class="img-fluid mb-2">
+                    <p class="card-text mb-0">Token:</p>
+                    <code class="fs-6">{{ token.token }}</code>
+                </div>
+                <div class="card-footer text-muted">
+                    Show this at the counter.
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <p>You have no active tokens for today. Register for a meal below to get one.</p>
+{% endif %}
+<hr>
+<!-- ==================== END OF NEW SECTION ==================== -->
+
+<!-- Weekly Schedule -->
+<h3 class="mt-4">Weekly Meal Schedule</h3>
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Day</th>
+                <th>Meal</th>
+                <th>Item</th>
+                <th>Cost</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for meal in schedule %}
+            <tr>
+                <td>{{ meal.day_of_week }}</td>
+                <td>{{ meal.meal_type }}</td>
+                <td>{{ meal.item_name }}</td>
+                <td>{{ "%.2f"|format(meal.cost) }}</td>
+                <td>
+                    <button class="btn btn-sm btn-success register-meal-btn" data-schedule-id="{{ meal._id }}">Register</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Meal History -->
+<h3 class="mt-5">Your Meal History</h3>
+<div id="meal-history-container" class="table-responsive">
+    <p>Loading history...</p>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="successModalLabel">Success!</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center">
+        <div id="success-message" class="alert alert-success"></div>
+        <p>Your new token is now visible in the "Active Tokens" section of your dashboard.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %} <!-- <<< THIS LINE WAS MISSING. IT IS THE FIX. -->
