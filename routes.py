@@ -9,6 +9,7 @@ from models import User
 from utils import generate_qr_code
 import uuid
 from datetime import datetime
+from app import db, bcrypt, INITIAL_DB_ERROR
 
 routes = Blueprint('routes', __name__)
 
@@ -182,19 +183,27 @@ def verify_token():
 @routes.route('/health-check-12345')
 def health_check():
     """
-    A simple, isolated route to test the database connection and nothing else.
+    Displays the initial database connection error if it exists.
     """
-    try:
-        # The 'ping' command is the simplest way to check a connection.
-        db.command('ping')
-        return "<h1>Success! The database connection is OK.</h1><p>If you see this, the MONGO_URI is correct and the server is reachable.</p>"
-    except Exception as e:
-        # If the connection fails, this will print the REAL error message to the screen.
-        error_message = str(e)
+    # --- THIS IS THE NEW LOGIC ---
+    if INITIAL_DB_ERROR:
+        # If our global error variable has something in it, display it.
+        # This is the root cause of the Internal Server Error.
         return f"""
-            <h1>Database Connection Failed</h1>
-            <p>The application could not connect to the database. This is the reason for the 'Internal Server Error'.</p>
-            <h2>The specific error is:</h2>
-            <pre style='background-color: #f0f0f0; padding: 15px; border: 1px solid #ccc; white-space: pre-wrap; word-wrap: break-word;'>{error_message}</pre>
-            <p>Please copy this entire error message and use it to debug the issue.</p>
+            <h1>The Root Cause of the Error Has Been Found</h1>
+            <p>The application could not connect to the database at startup.</p>
+            <h2>The specific connection error was:</h2>
+            <pre style='background-color: #f0f0f0; padding: 15px; border: 1px solid #ccc; white-space: pre-wrap; word-wrap: break-word;'>{INITIAL_DB_ERROR}</pre>
+            <p>This is the final error message we need to solve the problem.</p>
         """
+    
+    # If there was no initial error, check if the db connection is okay.
+    if db is None:
+        return "<h1>Error: Database object is None, but no initial connection error was recorded.</h1>"
+
+    # If everything looks okay, try to ping the database.
+    try:
+        db.command('ping')
+        return "<h1>Success! The database connection is OK.</h1>"
+    except Exception as e:
+        return f"<h1>Ping Failed! The connection was established but is now broken. Error: {e}</h1>"

@@ -1,12 +1,16 @@
-# This is the complete and final app.py file
+# This is the "Truth Serum" version of app.py
 
 from flask import Flask
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager
 from pymongo import MongoClient
 from config import Config
+
 import os
-import certifi # <-- IMPORT THE NEW LIBRARY
+import certifi
+
+# --- NEW GLOBAL VARIABLE TO STORE THE ERROR ---
+INITIAL_DB_ERROR = None
 
 db = None
 bcrypt = Bcrypt()
@@ -18,15 +22,12 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    global db
+    global db, INITIAL_DB_ERROR
     try:
         mongo_uri = app.config['MONGO_URI']
         if not mongo_uri:
             raise ValueError("MONGO_URI environment variable not set.")
         
-        # --- THE FINAL FIX IS HERE ---
-        # We are telling MongoClient to use the certificate bundle from the 'certifi' library.
-        # This solves SSL handshake issues on platforms like Vercel.
         ca = certifi.where()
         client = MongoClient(mongo_uri, tlsCAFile=ca)
         
@@ -36,7 +37,9 @@ def create_app():
         print("MongoDB connection successful!")
 
     except Exception as e:
-        # We will now print the initial connection error for better debugging
+        # --- THE FIX IS HERE ---
+        # Instead of just printing, we SAVE the error message to our global variable.
+        INITIAL_DB_ERROR = str(e)
         print(f"CRITICAL: Initial MongoDB connection failed. Error: {e}")
         db = None
 
