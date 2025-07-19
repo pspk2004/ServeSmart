@@ -176,3 +176,25 @@ def verify_token():
             return jsonify({'success': False, 'message': 'This token has already been used.'})
         else:
             return jsonify({'success': False, 'message': 'Invalid or expired token.'})  
+
+            # In routes.py, add this entire new function at the end of the file.
+
+@routes.route('/health-check-12345')
+def health_check():
+    """
+    A simple, isolated route to test the database connection and nothing else.
+    """
+    try:
+        # The 'ping' command is the simplest way to check a connection.
+        db.command('ping')
+        return "<h1>Success! The database connection is OK.</h1><p>If you see this, the MONGO_URI is correct and the server is reachable.</p>"
+    except Exception as e:
+        # If the connection fails, this will print the REAL error message to the screen.
+        error_message = str(e)
+        return f"""
+            <h1>Database Connection Failed</h1>
+            <p>The application could not connect to the database. This is the reason for the 'Internal Server Error'.</p>
+            <h2>The specific error is:</h2>
+            <pre style='background-color: #f0f0f0; padding: 15px; border: 1px solid #ccc; white-space: pre-wrap; word-wrap: break-word;'>{error_message}</pre>
+            <p>Please copy this entire error message and use it to debug the issue.</p>
+        """
