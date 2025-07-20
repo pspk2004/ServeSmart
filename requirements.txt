@@ -5,5 +5,5 @@ gunicorn
 python-dotenv
 qrcode
 Pillow
-pymongo[srv]
-certifi
+Flask-SQLAlchemy
+psycopg2-binary

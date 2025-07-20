@@ -1,23 +1,36 @@
+from datetime import datetime, date
+from app import db, login_manager
 from flask_login import UserMixin
-from app import login_manager, db
-from bson.objectid import ObjectId # Import ObjectId
 
 @login_manager.user_loader
 def load_user(user_id):
-    """Loads a user from the database given their ID."""
-    # MongoDB uses _id as an ObjectId, so we need to convert the string ID back
-    user_data = db.users.find_one({"_id": ObjectId(user_id)})
-    if user_data:
-        return User(user_data)
-    return None
+    return User.query.get(int(user_id))
 
-class User(UserMixin):
-    """User model for Flask-Login."""
-    def __init__(self, user_data):
-        self.id = str(user_data['_id']) # Store ID as a string
-        self.roll_number = user_data['roll_number']
-        self.name = user_data['name']
-        self.password = user_data['password']
-        self.is_admin = user_data.get('is_admin', False)
-        self.points = user_data.get('points', 1000.00)
-        self.opt_out_month = user_data.get('opt_out_month', None)
+class User(db.Model, UserMixin):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    roll_number = db.Column(db.String(20), unique=True, nullable=False)
+    password = db.Column(db.String(60), nullable=False)
+    is_admin = db.Column(db.Boolean, nullable=False, default=False)
+    points = db.Column(db.Numeric(10, 2), nullable=False, default=1000.00)
+    registrations = db.relationship('Registration', backref='student', lazy=True)
+
+class Schedule(db.Model):
+    __tablename__ = 'schedule'
+    id = db.Column(db.Integer, primary_key=True)
+    day_of_week = db.Column(db.String(10), nullable=False)
+    meal_type = db.Column(db.String(10), nullable=False)
+    item_name = db.Column(db.String(100), nullable=False)
+    cost = db.Column(db.Numeric(10, 2), nullable=False)
+
+class Registration(db.Model):
+    __tablename__ = 'registrations'
+    id = db.Column(db.Integer, primary_key=True)
+    registration_date = db.Column(db.Date, nullable=False, default=date.today)
+    token = db.Column(db.String(36), unique=True, nullable=False)
+    is_used = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    schedule_id = db.Column(db.Integer, db.ForeignKey('schedule.id'), nullable=False)
+    meal = db.relationship('Schedule')

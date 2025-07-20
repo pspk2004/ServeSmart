@@ -1,5 +1,5 @@
-# This is the content of run.py
-from app import app
+from app import create_app
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# The create_app function from app.py is called to create the Flask app instance.
+# Vercel will automatically find and serve this 'app' object.
+app = create_app()
