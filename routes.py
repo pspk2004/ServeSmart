@@ -1,20 +1,20 @@
 import uuid
 from datetime import date
-from decimal import Decimal # <-- Import the Decimal type
+from decimal import Decimal
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_user, current_user, logout_user, login_required
-from sqlalchemy import func
 from app import db, bcrypt
 from models import User, Schedule, Registration
 from utils import generate_qr_code
 
 routes = Blueprint('routes', __name__)
 
-# --- Main and Authentication Routes ---
+# --- Main and Auth Routes (No changes here) ---
 @routes.route('/')
 def index():
     return render_template('index.html')
 
+# ... (register, login, logout, dashboard routes remain the same) ...
 @routes.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated: return redirect(url_for('routes.dashboard'))
@@ -54,12 +54,18 @@ def logout():
 def dashboard():
     return redirect(url_for('routes.admin_dashboard')) if current_user.is_admin else redirect(url_for('routes.student_dashboard'))
 
+
 # --- Student Routes ---
 @routes.route('/student')
 @login_required
 def student_dashboard():
+    # --- THIS IS THE FIX ---
+    # Fetch the schedule unsorted from the DB
+    schedule_items = Schedule.query.all()
+    # Sort the schedule robustly in Python
     day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-    schedule = Schedule.query.order_by(db.case({day: i for i, day in enumerate(day_order)}, value=Schedule.day_of_week)).all()
+    schedule = sorted(schedule_items, key=lambda x: day_order.index(x.day_of_week))
+    
     active_tokens = Registration.query.filter_by(user_id=current_user.id, registration_date=date.today(), is_used=False).all()
     for token in active_tokens:
         token.qr_code = generate_qr_code(token.token)
@@ -68,39 +74,50 @@ def student_dashboard():
 @routes.route('/register_meal', methods=['POST'])
 @login_required
 def register_meal():
-    schedule_id = request.form.get('schedule_id')
-    meal = Schedule.query.get(schedule_id)
-    
-    # --- THIS IS THE FIX ---
-    # We compare the Decimal objects directly, without converting to float.
-    if current_user.points < meal.cost:
-        return jsonify({'success': False, 'message': 'Insufficient points.'})
-    
-    token_str = str(uuid.uuid4())
-    
-    # We perform the subtraction with Decimal objects.
-    current_user.points -= meal.cost
-    
-    new_registration = Registration(
-        token=token_str,
-        user_id=current_user.id,
-        schedule_id=meal.id,
-        registration_date=date.today()
-    )
-    db.session.add(new_registration)
-    db.session.commit()
-    
-    return jsonify({'success': True, 'message': 'Meal registered successfully!'})
+    try:
+        schedule_id = request.form.get('schedule_id')
+        # Check if schedule_id is provided
+        if not schedule_id:
+            return jsonify({'success': False, 'message': 'Meal ID not provided.'}), 400
+
+        meal = Schedule.query.get(int(schedule_id))
+        if not meal:
+            return jsonify({'success': False, 'message': 'Meal not found.'}), 404
+
+        # Compare Decimal objects directly
+        if current_user.points < meal.cost:
+            return jsonify({'success': False, 'message': 'Insufficient points.'})
+        
+        token_str = str(uuid.uuid4())
+        
+        # Perform subtraction with Decimal objects
+        current_user.points -= meal.cost
+        
+        new_registration = Registration(
+            token=token_str,
+            user_id=current_user.id,
+            schedule_id=meal.id,
+            registration_date=date.today()
+        )
+        db.session.add(new_registration)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Meal registered successfully!'})
+
+    except Exception as e:
+        # If any error occurs, rollback the session and log it
+        db.session.rollback()
+        print(f"Error in /register_meal: {e}") # This will print the error to Vercel logs
+        return jsonify({'success': False, 'message': 'A server error occurred.'}), 500
 
 @routes.route('/meal_history')
 @login_required
 def meal_history():
     registrations = Registration.query.filter_by(user_id=current_user.id).order_by(Registration.created_at.desc()).all()
-    # We convert the cost to a float here ONLY for sending it as JSON.
     history = [{"created_at": reg.created_at.strftime('%Y-%m-%d'), "meal_details": {"item_name": reg.meal.item_name, "cost": float(reg.meal.cost)}, "is_used": reg.is_used} for reg in registrations]
     return jsonify(history)
 
-# --- Admin Routes ---
+# --- Admin Routes (No changes here) ---
 @routes.route('/admin')
 @login_required
 def admin_dashboard():
