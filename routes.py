@@ -109,3 +109,72 @@ def verify_token():
             return jsonify({'success': False, 'message': 'This token has already been used.'})
         else:
             return jsonify({'success': False, 'message': 'Invalid or expired token.'})
+
+            # In routes.py, ADD THE FOLLOWING CODE TO THE END OF THE FILE
+
+# --- New Admin CRUD Routes for Schedule Management ---
+
+@routes.route('/admin/schedule')
+@login_required
+def manage_schedule():
+    if not current_user.is_admin:
+        return redirect(url_for('routes.student_dashboard'))
+    
+    day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    schedule = Schedule.query.order_by(db.case(
+        {day: i for i, day in enumerate(day_order)},
+        value=Schedule.day_of_week
+    )).all()
+    
+    return render_template('admin_schedule.html', schedule=schedule)
+
+@routes.route('/admin/schedule/add', methods=['GET', 'POST'])
+@login_required
+def add_meal():
+    if not current_user.is_admin:
+        return redirect(url_for('routes.student_dashboard'))
+    
+    if request.method == 'POST':
+        new_meal = Schedule(
+            day_of_week=request.form['day_of_week'],
+            meal_type=request.form['meal_type'],
+            item_name=request.form['item_name'],
+            cost=request.form['cost']
+        )
+        db.session.add(new_meal)
+        db.session.commit()
+        flash('New meal has been added to the schedule!', 'success')
+        return redirect(url_for('routes.manage_schedule'))
+    
+    return render_template('admin_meal_form.html', title='Add New Meal', meal=None)
+
+@routes.route('/admin/schedule/edit/<int:meal_id>', methods=['GET', 'POST'])
+@login_required
+def edit_meal(meal_id):
+    if not current_user.is_admin:
+        return redirect(url_for('routes.student_dashboard'))
+    
+    meal = Schedule.query.get_or_404(meal_id)
+    
+    if request.method == 'POST':
+        meal.day_of_week = request.form['day_of_week']
+        meal.meal_type = request.form['meal_type']
+        meal.item_name = request.form['item_name']
+        meal.cost = request.form['cost']
+        db.session.commit()
+        flash('Meal has been updated!', 'success')
+        return redirect(url_for('routes.manage_schedule'))
+    
+    return render_template('admin_meal_form.html', title='Edit Meal', meal=meal)
+
+@routes.route('/admin/schedule/delete/<int:meal_id>', methods=['POST'])
+@login_required
+def delete_meal(meal_id):
+    if not current_user.is_admin:
+        return redirect(url_for('routes.student_dashboard'))
+    
+    meal = Schedule.query.get_or_404(meal_id)
+    db.session.delete(meal)
+    db.session.commit()
+    flash('Meal has been deleted from the schedule!', 'success')
+    return redirect(url_for('routes.manage_schedule'))

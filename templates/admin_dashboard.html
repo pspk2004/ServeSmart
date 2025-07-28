@@ -6,6 +6,13 @@
     <h1 class="h2">Admin Dashboard</h1>
 </div>
 
+<div class="card mb-4">
+    <div class="card-header">Admin Controls</div>
+    <div class="card-body">
+        <a href="{{ url_for('routes.manage_schedule') }}" class="btn btn-outline-primary">Manage Weekly Schedule</a>
+        <!-- We will add a 'Manage Students' button here in the next feature -->
+    </div>
+</div>
 <!-- ==================== LIVE QR SCANNER ==================== -->
 <div class="card mb-4 border-primary">
     <div class="card-header bg-primary text-white">
