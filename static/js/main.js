@@ -1,119 +1,52 @@
-// This is the complete, corrected main.js file.
+// This is the complete, correct, and final main.js file.
+// It contains all the logic for both students and admins.
 
 document.addEventListener('DOMContentLoaded', function() {
 
-    // --- SHARED VERIFICATION LOGIC ---
-    // A single, reliable function to verify a token, whether from scanner or manual input.
-    function verifyToken(token) {
-        const statusAlert = document.getElementById('verification-status-alert');
-        
-        // 1. Show immediate feedback
-        statusAlert.style.display = 'block';
-        statusAlert.className = 'alert alert-info'; // Blue 'info' style
-        statusAlert.textContent = 'Verifying token...';
+    // --- STUDENT: Meal Registration Logic ---
+    // Check if we are on the student page by looking for the register buttons
+    if (document.querySelector('.register-meal-btn')) {
+        document.querySelectorAll('.register-meal-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                // Use the simpler modal from our previous working version
+                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                const successMessageDiv = document.getElementById('success-message');
 
-        const formData = new FormData();
-        formData.append('token', token);
+                const scheduleId = this.dataset.scheduleId;
+                const formData = new FormData();
+                formData.append('schedule_id', scheduleId);
 
-        fetch('/verify_token', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            // 2. Show the final result from the server
-            if (data.success) {
-                statusAlert.className = 'alert alert-success'; // Green 'success' style
-                statusAlert.textContent = data.message;
-                // Reload the page after a success to update the registration list
-                setTimeout(() => window.location.reload(), 1500);
-            } else {
-                statusAlert.className = 'alert alert-danger'; // Red 'danger' style
-                statusAlert.textContent = `Failed: ${data.message}`;
-            }
-        })
-        .catch(err => {
-            console.error('Verification Fetch Error:', err);
-            statusAlert.className = 'alert alert-danger';
-            statusAlert.textContent = 'A network error occurred. Please check your connection and try again.';
-        });
-    }
-
-
-    // --- QR SCANNER SETUP ---
-    // Check if we are on the admin page by looking for the qr-reader element
-    if (document.getElementById('qr-reader')) {
-        const html5QrCode = new Html5Qrcode("qr-reader");
-        const startScanBtn = document.getElementById('start-scan-btn');
-        const stopScanBtn = document.getElementById('stop-scan-btn');
-        const statusAlert = document.getElementById('verification-status-alert');
-
-        const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-            // This function is called when a QR code is successfully scanned.
-            
-            // Immediately stop the camera
-            html5QrCode.stop().then(ignore => {
-                startScanBtn.style.display = 'inline-block';
-                stopScanBtn.style.display = 'none';
-            }).catch(err => console.error("Failed to stop scanner cleanly.", err));
-            
-            // Directly call our verification logic
-            verifyToken(decodedText);
-        };
-
-        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-        startScanBtn.addEventListener('click', () => {
-            statusAlert.style.display = 'none'; // Hide old alerts
-            html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
-                .catch(err => {
-                    alert("Unable to start scanner. Please grant camera permissions and use a secure (HTTPS) connection.");
-                    console.error("Scanner Start Error:", err);
-                });
-            startScanBtn.style.display = 'none';
-            stopScanBtn.style.display = 'inline-block';
-        });
-
-        stopScanBtn.addEventListener('click', () => {
-            html5QrCode.stop().then(ignore => {
-                startScanBtn.style.display = 'inline-block';
-                stopScanBtn.style.display = 'none';
-            }).catch(err => console.error("Failed to stop scanner cleanly.", err));
-        });
-    }
-
-
-    // --- MANUAL (BACKUP) VERIFICATION LOGIC ---
-    const manualVerifyForm = document.getElementById('verify-token-form');
-    if (manualVerifyForm) {
-        manualVerifyForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const tokenInput = document.getElementById('token-input');
-            const resultDiv = document.getElementById('manual-verify-result');
-
-            // This logic is now just for the manual form's result div
-            const token = tokenInput.value.trim();
-            if (!token) {
-                resultDiv.className = 'alert alert-warning';
-                resultDiv.textContent = 'Please enter a token ID.';
-                return;
-            }
-            
-            // We can reuse our robust verifyToken function, but we need to update a different div
-            const formData = new FormData();
-            formData.append('token', token);
-            fetch('/verify_token', { method: 'POST', body: formData })
-                .then(res => res.json())
+                fetch('/register_meal', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
                 .then(data => {
-                    resultDiv.className = data.success ? 'alert alert-success' : 'alert alert-danger';
-                    resultDiv.textContent = data.message;
-                    if (data.success) setTimeout(() => window.location.reload(), 1500);
+                    if (data.success) {
+                        // On success, show the success message in the modal
+                        successMessageDiv.textContent = data.message;
+                        successModal.show();
+                        
+                        // Reload the page after a short delay to display the new active token
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+
+                    } else {
+                        // If it fails (e.g., not enough points), just show a simple alert
+                        alert(`Error: ${data.message}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error during meal registration:', error);
+                    alert('An unexpected error occurred. Please try again.');
                 });
+            });
         });
     }
 
 
-    // --- STUDENT MEAL HISTORY LOGIC ---
+    // --- STUDENT: Meal History Logic ---
     // Check if we are on the student page by looking for this container
     const mealHistoryContainer = document.getElementById('meal-history-container');
     if (mealHistoryContainer) {
@@ -123,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let historyHtml = '<table class="table table-sm"><thead><tr><th>Date</th><th>Item</th><th>Cost</th><th>Status</th></tr></thead><tbody>';
                 if (data && data.length > 0) {
                     data.forEach(item => {
-                        const registrationDate = item.created_at ? new Date(item.created_at.$date).toLocaleDateString() : 'N/A';
+                        const registrationDate = item.created_at ? new Date(item.created_at).toLocaleDateString() : 'N/A';
                         historyHtml += `
                             <tr>
                                 <td>${registrationDate}</td>
@@ -139,6 +72,84 @@ document.addEventListener('DOMContentLoaded', function() {
                 historyHtml += '</tbody></table>';
                 mealHistoryContainer.innerHTML = historyHtml;
             });
+    }
+
+
+    // --- ADMIN: QR Scanner and Verification Logic ---
+    // Check if we are on the admin page by looking for the qr-reader element
+    if (document.getElementById('qr-reader')) {
+        const html5QrCode = new Html5Qrcode("qr-reader");
+        const startScanBtn = document.getElementById('start-scan-btn');
+        const stopScanBtn = document.getElementById('stop-scan-btn');
+        const tokenInput = document.getElementById('token-input');
+        const verifyForm = document.getElementById('verify-token-form');
+
+        // This is the function that gets called when a QR code is successfully scanned.
+        const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+            html5QrCode.stop().then(ignore => {
+                // Stop the camera feed
+                alert(`Scan Successful! Token: ${decodedText}`);
+                // Put the scanned token into the manual input field
+                tokenInput.value = decodedText;
+                // Automatically submit the manual form for verification
+                verifyForm.dispatchEvent(new Event('submit', { 'bubbles': true }));
+                
+                // Reset button visibility
+                startScanBtn.style.display = 'inline-block';
+                stopScanBtn.style.display = 'none';
+
+            }).catch(err => console.error("Failed to stop scanner.", err));
+        };
+
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        startScanBtn.addEventListener('click', () => {
+            html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
+                .catch(err => alert("Could not start scanner. Please grant camera permissions."));
+            startScanBtn.style.display = 'none';
+            stopScanBtn.style.display = 'inline-block';
+        });
+
+        stopScanBtn.addEventListener('click', () => {
+            html5QrCode.stop().then(ignore => {
+                startScanBtn.style.display = 'inline-block';
+                stopScanBtn.style.display = 'none';
+            }).catch(err => console.error("Failed to stop scanner.", err));
+        });
+    }
+
+    // --- ADMIN: Manual (Backup) Verification Logic ---
+    const manualVerifyForm = document.getElementById('verify-token-form');
+    if (manualVerifyForm) {
+        manualVerifyForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const tokenInput = document.getElementById('token-input');
+            const resultDiv = document.getElementById('manual-verify-result') || document.getElementById('verification-status-alert'); // Support both divs
+            const token = tokenInput.value.trim();
+
+            if (!token) {
+                resultDiv.className = 'alert alert-warning';
+                resultDiv.textContent = 'Please enter or scan a token ID.';
+                return;
+            }
+            
+            resultDiv.className = 'alert alert-info';
+            resultDiv.textContent = 'Verifying...';
+            resultDiv.style.display = 'block';
+
+            const formData = new FormData();
+            formData.append('token', token);
+            
+            fetch('/verify_token', { method: 'POST', body: formData })
+                .then(res => res.json())
+                .then(data => {
+                    resultDiv.className = data.success ? 'alert alert-success' : 'alert alert-danger';
+                    resultDiv.textContent = data.message;
+                    if (data.success) {
+                        setTimeout(() => window.location.reload(), 1500);
+                    }
+                });
+        });
     }
 
 });
