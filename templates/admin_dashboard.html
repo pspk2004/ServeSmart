@@ -5,32 +5,36 @@
     <h1 class="h2">Admin Dashboard</h1>
 </div>
 
-<!-- Admin Controls Section (We'll add more links here later) -->
-<div class="card mb-4">
-    <div class="card-header">Admin Controls</div>
-    <div class="card-body">
-        <!-- Placeholder for future features like Manage Schedule/Students -->
-        <p>Welcome to the admin control panel.</p>
+<!-- ==================== LIVE QR SCANNER (Primary) ==================== -->
+<div class="card mb-4 border-primary">
+    <div class="card-header bg-primary text-white"><strong>1. Live QR Code Scanner</strong></div>
+    <div class="card-body text-center">
+        <div id="qr-reader" style="width: 100%; max-width: 400px; margin: 0 auto;"></div>
+        <div id="verification-status-alert" class="alert mt-3" style="display: none;"></div>
+        <div class="mt-3">
+            <button id="start-scan-btn" class="btn btn-success">Start Camera</button>
+            <button id="stop-scan-btn" class="btn btn-danger" style="display: none;">Stop Camera</button>
+        </div>
     </div>
 </div>
 
-<!-- QR Scanner and Manual Verification (No changes here) -->
+<!-- ==================== MANUAL TOKEN ENTRY (Backup 1) ==================== -->
 <div class="card mb-4">
-    <div class="card-header">Scan & Verify QR Token</div>
+    <div class="card-header"><strong>2. Manual Token Entry (Backup)</strong></div>
     <div class="card-body">
         <form id="verify-token-form">
             <div class="mb-3">
                 <label for="token-input" class="form-label">Enter Token ID</label>
-                <input type="text" class="form-control" id="token-input" placeholder="Enter token from student's QR">
+                <input type="text" class="form-control" id="token-input" placeholder="Enter token if scanner fails">
             </div>
-            <button type="submit" class="btn btn-primary">Verify Token</button>
+            <button type="submit" class="btn btn-secondary">Verify Manually</button>
         </form>
         <div id="manual-verify-result" class="mt-3"></div>
     </div>
 </div>
 
-<!-- Daily Registrations -->
-<h3 class="mt-5">Today's Meal Registrations</h3>
+<!-- ==================== DAILY REGISTRATIONS (Backup 2) ==================== -->
+<h3 class="mt-5">3. Today's Meal Registrations</h3>
 <div class="table-responsive">
     <table class="table table-striped">
         <thead>
@@ -38,30 +42,41 @@
                 <th>Student Name</th>
                 <th>Roll Number</th>
                 <th>Meal Item</th>
-                <th>Status</th>
+                <th>Token</th>
+                <th>Action</th>
             </tr>
         </thead>
         <tbody>
             {% if registrations %}
                 {% for reg in registrations %}
                 <tr>
-                    <!-- This relies on the back-reference from the Registration model to the User model -->
                     <td>{{ reg.student.name }}</td>
                     <td>{{ reg.student.roll_number }}</td>
                     <td>{{ reg.meal.item_name }}</td>
+                    <td><code>{{ reg.token }}</code></td>
                     <td>
-                        <span class="badge {{ 'bg-success' if reg.is_used else 'bg-warning text-dark' }}">
-                            {{ 'Used' if reg.is_used else 'Not Used' }}
-                        </span>
+                        {% if not reg.is_used %}
+                            <!-- THIS IS THE NEW ONE-CLICK VERIFY BUTTON -->
+                            <button class="btn btn-sm btn-outline-success verify-from-list-btn" data-token="{{ reg.token }}">
+                                Verify
+                            </button>
+                        {% else %}
+                            <span class="badge bg-success">Verified</span>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
             {% else %}
                 <tr>
-                    <td colspan="4" class="text-center">No meal registrations for today yet.</td>
+                    <td colspan="5" class="text-center">No meal registrations for today yet.</td>
                 </tr>
             {% endif %}
         </tbody>
     </table>
 </div>
+{% endblock %}
+
+<!-- This script block is crucial for the scanner to work -->
+{% block scripts %}
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 {% endblock %}
