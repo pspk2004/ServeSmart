@@ -3,14 +3,14 @@ from datetime import date
 from decimal import Decimal
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_user, current_user, logout_user, login_required
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload # Make sure this import is here
 from app import db, bcrypt
 from models import User, Schedule, Registration
 from utils import generate_qr_code
 
 routes = Blueprint('routes', __name__)
 
-# --- Main and Authentication Routes ---
+# --- Main and Auth Routes (No changes) ---
 @routes.route('/')
 def index():
     return render_template('index.html')
@@ -62,7 +62,7 @@ def student_dashboard():
     schedule_items = Schedule.query.all()
     schedule = sorted(schedule_items, key=lambda x: day_order.index(x.day_of_week))
     
-    # This uses eager loading for the meal, which is correct and efficient.
+    # EAGER LOADING: Pre-load the related 'meal' data for each registration.
     active_tokens = Registration.query.options(joinedload(Registration.meal)).filter_by(
         user_id=current_user.id, 
         registration_date=date.today(), 
@@ -79,20 +79,15 @@ def student_dashboard():
 def register_meal():
     try:
         schedule_id = request.form.get('schedule_id')
-        if not schedule_id:
-            return jsonify({'success': False, 'message': 'Meal ID not provided.'}), 400
+        if not schedule_id: return jsonify({'success': False, 'message': 'Meal ID not provided.'}), 400
         meal = Schedule.query.get(int(schedule_id))
-        if not meal:
-            return jsonify({'success': False, 'message': 'Meal not found.'}), 404
-        if current_user.points < meal.cost:
-            return jsonify({'success': False, 'message': 'Insufficient points.'})
+        if not meal: return jsonify({'success': False, 'message': 'Meal not found.'}), 404
+        if current_user.points < meal.cost: return jsonify({'success': False, 'message': 'Insufficient points.'})
         
         token_str = str(uuid.uuid4())
         current_user.points -= meal.cost
         
-        new_registration = Registration(
-            token=token_str, user_id=current_user.id, schedule_id=meal.id, registration_date=date.today()
-        )
+        new_registration = Registration(token=token_str, user_id=current_user.id, schedule_id=meal.id, registration_date=date.today())
         db.session.add(new_registration)
         db.session.commit()
         return jsonify({'success': True, 'message': 'Meal registered successfully!'})
@@ -104,6 +99,7 @@ def register_meal():
 @routes.route('/meal_history')
 @login_required
 def meal_history():
+    # EAGER LOADING: Pre-load the related 'meal' data.
     registrations = Registration.query.options(joinedload(Registration.meal)).filter_by(user_id=current_user.id).order_by(Registration.created_at.desc()).all()
     history = [{"created_at": reg.created_at.strftime('%Y-%m-%d'), "meal_details": {"item_name": reg.meal.item_name, "cost": float(reg.meal.cost)}, "is_used": reg.is_used} for reg in registrations]
     return jsonify(history)
@@ -115,9 +111,12 @@ def admin_dashboard():
     if not current_user.is_admin: return redirect(url_for('routes.student_dashboard'))
     
     # --- THIS IS THE FINAL FIX ---
-    # We are back to the simple, robust query. We fetch the registrations, and the template will use
-    # the back-reference (reg.student) to get the user details. This is reliable.
-    registrations = Registration.query.filter_by(registration_date=date.today()).order_by(Registration.created_at.desc()).all()
+    # EAGER LOADING: Pre-load BOTH the related 'meal' and 'student' (User) data.
+    # The template needs both reg.meal.item_name and reg.student.name.
+    registrations = Registration.query.options(
+        joinedload(Registration.meal), 
+        joinedload(Registration.student)
+    ).filter_by(registration_date=date.today()).order_by(Registration.created_at.desc()).all()
     
     return render_template('admin_dashboard.html', registrations=registrations)
 
