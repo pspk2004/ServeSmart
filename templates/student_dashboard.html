@@ -60,7 +60,7 @@
                 <td>{{ meal.item_name }}</td>
                 <td>{{ "%.2f"|format(meal.cost) }}</td>
                 <td>
-                    <button class="btn btn-sm btn-success register-meal-btn" data-schedule-id="{{ meal._id }}">Register</button>
+                    <button class="btn btn-sm btn-success register-meal-btn" data-schedule-id="{{ meal.id }}">Register</button>
                 </td>
             </tr>
             {% endfor %}
