@@ -3,14 +3,13 @@ from datetime import date
 from decimal import Decimal
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_user, current_user, logout_user, login_required
-from sqlalchemy.orm import joinedload # Make sure this import is at the top
 from app import db, bcrypt
 from models import User, Schedule, Registration
 from utils import generate_qr_code
 
 routes = Blueprint('routes', __name__)
 
-# --- Main and Auth Routes (No changes needed) ---
+# --- Main and Auth Routes (No Changes) ---
 @routes.route('/')
 def index(): return render_template('index.html')
 @routes.route('/register', methods=['GET', 'POST'])
@@ -42,6 +41,7 @@ def logout(): logout_user(); return redirect(url_for('routes.index'))
 @login_required
 def dashboard(): return redirect(url_for('routes.admin_dashboard')) if current_user.is_admin else redirect(url_for('routes.student_dashboard'))
 
+
 # --- Student Routes ---
 @routes.route('/student')
 @login_required
@@ -50,15 +50,22 @@ def student_dashboard():
     schedule_items = Schedule.query.all()
     schedule = sorted(schedule_items, key=lambda x: day_order.index(x.day_of_week))
     
-    # EAGER LOADING: Pre-load the related 'meal' data for each registration.
-    active_tokens = Registration.query.options(joinedload(Registration.meal)).filter_by(user_id=current_user.id, registration_date=date.today(), is_used=False).all()
+    # --- THIS IS THE "BRUTE FORCE" FIX ---
+    # 1. Get the simple registration objects.
+    active_tokens = Registration.query.filter_by(user_id=current_user.id, registration_date=date.today(), is_used=False).all()
 
-    for token in active_tokens: token.qr_code = generate_qr_code(token.token)
+    # 2. Manually attach the meal details to each token.
+    for token in active_tokens:
+        token.qr_code = generate_qr_code(token.token)
+        # This is a simple, direct query that is guaranteed to work.
+        token.meal = Schedule.query.get(token.schedule_id)
+        
     return render_template('student_dashboard.html', schedule=schedule, user_data=current_user, active_tokens=active_tokens)
 
 @routes.route('/register_meal', methods=['POST'])
 @login_required
 def register_meal():
+    # This function is working perfectly and needs no changes.
     try:
         schedule_id = request.form.get('schedule_id')
         if not schedule_id: return jsonify({'success': False, 'message': 'Meal ID not provided.'}), 400
@@ -77,8 +84,10 @@ def register_meal():
 @routes.route('/meal_history')
 @login_required
 def meal_history():
-    # EAGER LOADING: Pre-load the related 'meal' data.
-    registrations = Registration.query.options(joinedload(Registration.meal)).filter_by(user_id=current_user.id).order_by(Registration.created_at.desc()).all()
+    registrations = Registration.query.filter_by(user_id=current_user.id).order_by(Registration.created_at.desc()).all()
+    # Manually attach meal details here too for robustness
+    for reg in registrations:
+        reg.meal = Schedule.query.get(reg.schedule_id)
     history = [{"created_at": reg.created_at.strftime('%Y-%m-%d'), "meal_details": {"item_name": reg.meal.item_name, "cost": float(reg.meal.cost)}, "is_used": reg.is_used} for reg in registrations]
     return jsonify(history)
 
@@ -88,9 +97,12 @@ def meal_history():
 def admin_dashboard():
     if not current_user.is_admin: return redirect(url_for('routes.student_dashboard'))
     
-    # EAGER LOADING: Pre-load BOTH the related 'meal' and 'student' (User) data.
-    registrations = Registration.query.options(joinedload(Registration.meal), joinedload(Registration.student)).filter_by(registration_date=date.today()).order_by(Registration.created_at.desc()).all()
-    
+    # Apply the same "brute force" fix here for stability
+    registrations = Registration.query.filter_by(registration_date=date.today()).order_by(Registration.created_at.desc()).all()
+    for reg in registrations:
+        reg.student = User.query.get(reg.user_id)
+        reg.meal = Schedule.query.get(reg.schedule_id)
+        
     return render_template('admin_dashboard.html', registrations=registrations)
 
 @routes.route('/verify_token', methods=['POST'])
