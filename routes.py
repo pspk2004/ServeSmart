@@ -5,11 +5,11 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for,
 from flask_login import login_user, current_user, logout_user, login_required
 from app import db, bcrypt
 from models import User, Schedule, Registration
-from utils import generate_qr_code
+from utils import generate_qr_code # We will use this again!
 
 routes = Blueprint('routes', __name__)
 
-# --- Main and Auth Routes (No Changes) ---
+# --- Main and Auth Routes (No changes) ---
 @routes.route('/')
 def index(): return render_template('index.html')
 @routes.route('/register', methods=['GET', 'POST'])
@@ -49,34 +49,40 @@ def student_dashboard():
     day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
     schedule_items = Schedule.query.all()
     schedule = sorted(schedule_items, key=lambda x: day_order.index(x.day_of_week))
-    
-    # --- THIS IS THE "BRUTE FORCE" FIX ---
-    # 1. Get the simple registration objects.
     active_tokens = Registration.query.filter_by(user_id=current_user.id, registration_date=date.today(), is_used=False).all()
-
-    # 2. Manually attach the meal details to each token.
     for token in active_tokens:
         token.qr_code = generate_qr_code(token.token)
-        # This is a simple, direct query that is guaranteed to work.
         token.meal = Schedule.query.get(token.schedule_id)
-        
     return render_template('student_dashboard.html', schedule=schedule, user_data=current_user, active_tokens=active_tokens)
 
 @routes.route('/register_meal', methods=['POST'])
 @login_required
 def register_meal():
-    # This function is working perfectly and needs no changes.
+    # --- THIS IS THE NEW, SIMPLE LOGIC ---
     try:
         schedule_id = request.form.get('schedule_id')
         if not schedule_id: return jsonify({'success': False, 'message': 'Meal ID not provided.'}), 400
         meal = Schedule.query.get(int(schedule_id))
         if not meal: return jsonify({'success': False, 'message': 'Meal not found.'}), 404
         if current_user.points < meal.cost: return jsonify({'success': False, 'message': 'Insufficient points.'})
+        
         token_str = str(uuid.uuid4())
         current_user.points -= meal.cost
+        
         new_registration = Registration(token=token_str, user_id=current_user.id, schedule_id=meal.id, registration_date=date.today())
         db.session.add(new_registration); db.session.commit()
-        return jsonify({'success': True, 'message': 'Meal registered successfully!'})
+        
+        # 1. Generate the QR code on the server.
+        qr_code_b64 = generate_qr_code(token_str)
+        
+        # 2. Send the token and the QR code back to the JavaScript.
+        return jsonify({
+            'success': True, 
+            'message': 'Meal registered successfully!',
+            'token': token_str,
+            'qr_code': qr_code_b64
+        })
+
     except Exception as e:
         db.session.rollback(); print(f"Error in /register_meal: {e}")
         return jsonify({'success': False, 'message': 'A server error occurred.'}), 500
@@ -85,9 +91,7 @@ def register_meal():
 @login_required
 def meal_history():
     registrations = Registration.query.filter_by(user_id=current_user.id).order_by(Registration.created_at.desc()).all()
-    # Manually attach meal details here too for robustness
-    for reg in registrations:
-        reg.meal = Schedule.query.get(reg.schedule_id)
+    for reg in registrations: reg.meal = Schedule.query.get(reg.schedule_id)
     history = [{"created_at": reg.created_at.strftime('%Y-%m-%d'), "meal_details": {"item_name": reg.meal.item_name, "cost": float(reg.meal.cost)}, "is_used": reg.is_used} for reg in registrations]
     return jsonify(history)
 
@@ -96,13 +100,10 @@ def meal_history():
 @login_required
 def admin_dashboard():
     if not current_user.is_admin: return redirect(url_for('routes.student_dashboard'))
-    
-    # Apply the same "brute force" fix here for stability
     registrations = Registration.query.filter_by(registration_date=date.today()).order_by(Registration.created_at.desc()).all()
     for reg in registrations:
         reg.student = User.query.get(reg.user_id)
         reg.meal = Schedule.query.get(reg.schedule_id)
-        
     return render_template('admin_dashboard.html', registrations=registrations)
 
 @routes.route('/verify_token', methods=['POST'])
