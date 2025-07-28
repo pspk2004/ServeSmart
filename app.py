@@ -3,6 +3,7 @@ from flask_bcrypt import Bcrypt
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from config import Config
+from whitenoise import WhiteNoise # <--- IMPORT WhiteNoise
 
 # Create extension instances
 db = SQLAlchemy()
@@ -15,6 +16,11 @@ def create_app(config_class=Config):
     """Creates and configures the Flask application."""
     app = Flask(__name__)
     app.config.from_object(config_class)
+
+    # --- THIS IS THE FIX ---
+    # Wrap the app with WhiteNoise. It will now automatically find
+    # and serve files from your "static/" directory.
+    app.wsgi_app = WhiteNoise(app.wsgi_app, root='static/')
 
     # Initialize extensions with the app
     db.init_app(app)
@@ -29,10 +35,8 @@ def create_app(config_class=Config):
     with app.app_context():
         from models import User, Schedule
         
-        # This will create any tables that do not already exist.
         db.create_all()
 
-        # Seed the database with the admin user and schedule if they don't exist.
         if User.query.filter_by(roll_number='admin').first() is None:
             hashed_password = bcrypt.generate_password_hash('adminpass').decode('utf-8')
             admin = User(name='Admin User', roll_number='admin', password=hashed_password, is_admin=True, points=9999)
