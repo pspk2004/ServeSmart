@@ -3,14 +3,14 @@ from datetime import date
 from decimal import Decimal
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_user, current_user, logout_user, login_required
-from sqlalchemy.orm import joinedload # <--- ADD THIS IMPORT
+from sqlalchemy.orm import joinedload
 from app import db, bcrypt
 from models import User, Schedule, Registration
 from utils import generate_qr_code
 
 routes = Blueprint('routes', __name__)
 
-# --- Main and Auth Routes ---
+# --- Main and Authentication Routes ---
 @routes.route('/')
 def index():
     return render_template('index.html')
@@ -62,9 +62,7 @@ def student_dashboard():
     schedule_items = Schedule.query.all()
     schedule = sorted(schedule_items, key=lambda x: day_order.index(x.day_of_week))
     
-    # --- THIS IS THE FINAL FIX ---
-    # We use joinedload() to tell SQLAlchemy to fetch the related meal data in the same query.
-    # This is called "eager loading" and is much more robust than lazy loading.
+    # This uses eager loading for the meal, which is correct and efficient.
     active_tokens = Registration.query.options(joinedload(Registration.meal)).filter_by(
         user_id=current_user.id, 
         registration_date=date.today(), 
@@ -106,7 +104,6 @@ def register_meal():
 @routes.route('/meal_history')
 @login_required
 def meal_history():
-    # Also apply eager loading here for robustness
     registrations = Registration.query.options(joinedload(Registration.meal)).filter_by(user_id=current_user.id).order_by(Registration.created_at.desc()).all()
     history = [{"created_at": reg.created_at.strftime('%Y-%m-%d'), "meal_details": {"item_name": reg.meal.item_name, "cost": float(reg.meal.cost)}, "is_used": reg.is_used} for reg in registrations]
     return jsonify(history)
@@ -116,8 +113,12 @@ def meal_history():
 @login_required
 def admin_dashboard():
     if not current_user.is_admin: return redirect(url_for('routes.student_dashboard'))
-    # Also apply eager loading here for robustness
-    registrations = Registration.query.options(joinedload(Registration.meal), joinedload(Registration.student)).filter_by(registration_date=date.today()).order_by(Registration.created_at.desc()).all()
+    
+    # --- THIS IS THE FINAL FIX ---
+    # We are back to the simple, robust query. We fetch the registrations, and the template will use
+    # the back-reference (reg.student) to get the user details. This is reliable.
+    registrations = Registration.query.filter_by(registration_date=date.today()).order_by(Registration.created_at.desc()).all()
+    
     return render_template('admin_dashboard.html', registrations=registrations)
 
 @routes.route('/verify_token', methods=['POST'])
