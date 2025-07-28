@@ -1,12 +1,15 @@
 {
+  "version": 2,
   "builds": [
     {
       "src": "app.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "api/setup.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": {
+        "includeFiles": [
+          "static/**",
+          "templates/**"
+        ]
+      }
     }
   ],
   "routes": [
