@@ -1,5 +1,6 @@
 import uuid
 from datetime import date
+from decimal import Decimal # <-- Import the Decimal type
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_user, current_user, logout_user, login_required
 from sqlalchemy import func
@@ -69,19 +70,33 @@ def student_dashboard():
 def register_meal():
     schedule_id = request.form.get('schedule_id')
     meal = Schedule.query.get(schedule_id)
-    if float(current_user.points) < float(meal.cost):
+    
+    # --- THIS IS THE FIX ---
+    # We compare the Decimal objects directly, without converting to float.
+    if current_user.points < meal.cost:
         return jsonify({'success': False, 'message': 'Insufficient points.'})
+    
     token_str = str(uuid.uuid4())
-    current_user.points = float(current_user.points) - float(meal.cost)
-    new_registration = Registration(token=token_str, user_id=current_user.id, schedule_id=meal.id, registration_date=date.today())
+    
+    # We perform the subtraction with Decimal objects.
+    current_user.points -= meal.cost
+    
+    new_registration = Registration(
+        token=token_str,
+        user_id=current_user.id,
+        schedule_id=meal.id,
+        registration_date=date.today()
+    )
     db.session.add(new_registration)
     db.session.commit()
+    
     return jsonify({'success': True, 'message': 'Meal registered successfully!'})
 
 @routes.route('/meal_history')
 @login_required
 def meal_history():
     registrations = Registration.query.filter_by(user_id=current_user.id).order_by(Registration.created_at.desc()).all()
+    # We convert the cost to a float here ONLY for sending it as JSON.
     history = [{"created_at": reg.created_at.strftime('%Y-%m-%d'), "meal_details": {"item_name": reg.meal.item_name, "cost": float(reg.meal.cost)}, "is_used": reg.is_used} for reg in registrations]
     return jsonify(history)
 
@@ -109,72 +124,3 @@ def verify_token():
             return jsonify({'success': False, 'message': 'This token has already been used.'})
         else:
             return jsonify({'success': False, 'message': 'Invalid or expired token.'})
-
-            # In routes.py, ADD THE FOLLOWING CODE TO THE END OF THE FILE
-
-# --- New Admin CRUD Routes for Schedule Management ---
-
-@routes.route('/admin/schedule')
-@login_required
-def manage_schedule():
-    if not current_user.is_admin:
-        return redirect(url_for('routes.student_dashboard'))
-    
-    day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-    schedule = Schedule.query.order_by(db.case(
-        {day: i for i, day in enumerate(day_order)},
-        value=Schedule.day_of_week
-    )).all()
-    
-    return render_template('admin_schedule.html', schedule=schedule)
-
-@routes.route('/admin/schedule/add', methods=['GET', 'POST'])
-@login_required
-def add_meal():
-    if not current_user.is_admin:
-        return redirect(url_for('routes.student_dashboard'))
-    
-    if request.method == 'POST':
-        new_meal = Schedule(
-            day_of_week=request.form['day_of_week'],
-            meal_type=request.form['meal_type'],
-            item_name=request.form['item_name'],
-            cost=request.form['cost']
-        )
-        db.session.add(new_meal)
-        db.session.commit()
-        flash('New meal has been added to the schedule!', 'success')
-        return redirect(url_for('routes.manage_schedule'))
-    
-    return render_template('admin_meal_form.html', title='Add New Meal', meal=None)
-
-@routes.route('/admin/schedule/edit/<int:meal_id>', methods=['GET', 'POST'])
-@login_required
-def edit_meal(meal_id):
-    if not current_user.is_admin:
-        return redirect(url_for('routes.student_dashboard'))
-    
-    meal = Schedule.query.get_or_404(meal_id)
-    
-    if request.method == 'POST':
-        meal.day_of_week = request.form['day_of_week']
-        meal.meal_type = request.form['meal_type']
-        meal.item_name = request.form['item_name']
-        meal.cost = request.form['cost']
-        db.session.commit()
-        flash('Meal has been updated!', 'success')
-        return redirect(url_for('routes.manage_schedule'))
-    
-    return render_template('admin_meal_form.html', title='Edit Meal', meal=meal)
-
-@routes.route('/admin/schedule/delete/<int:meal_id>', methods=['POST'])
-@login_required
-def delete_meal(meal_id):
-    if not current_user.is_admin:
-        return redirect(url_for('routes.student_dashboard'))
-    
-    meal = Schedule.query.get_or_404(meal_id)
-    db.session.delete(meal)
-    db.session.commit()
-    flash('Meal has been deleted from the schedule!', 'success')
-    return redirect(url_for('routes.manage_schedule'))
