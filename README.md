@@ -1,96 +1,131 @@
 # ServeSmart - A Modern College Mess Management System
 
-ServeSmart is a complete, end-to-end mess management system built for colleges and hostels. It provides a seamless digital experience for both students and mess administrators, handling everything from meal registration and real-time QR code verification to point tracking and user management.
+ServeSmart is a comprehensive, full-stack web application designed to solve the logistical challenges of traditional college and hostel mess systems. It replaces inefficient, paper-based processes with a streamlined, reliable, and user-friendly digital platform.
 
-This project is built with a robust Python Flask backend, a dynamic HTML/CSS/JavaScript frontend, and a scalable NoSQL database (MongoDB). It is designed for easy deployment on modern cloud platforms.
+### The Problem
+Traditional college mess systems are often plagued by inefficiencies:
+- **Manual Bookkeeping:** Reliance on paper registers for tracking meals leads to accounting errors and significant administrative overhead.
+- **Chaotic Queues:** The process of issuing and verifying meal tokens manually can cause long, frustrating queues for students.
+- **Lack of Transparency:** Students have no easy way to track their spending, view their meal history, or know their current point balance.
+- **Wastage:** Without accurate data on daily meal registrations, administrators cannot effectively predict demand, leading to food wastage.
 
-## 🚀 Core Features
+### The Solution: ServeSmart
+ServeSmart digitizes and streamlines this entire workflow, creating a seamless and transparent experience for both students and mess administrators. It is an end-to-end digital solution that handles everything from a student registering for a meal on their phone to an admin verifying it instantly with a QR code scanner.
 
-### 🎓 For Students
-- **Simple Registration & Login**: Secure authentication using college roll numbers.
-- **Point-Based System**: Students start with a point balance that is used for meal registrations.
-- **One-Click Meal Registration**: Register for any meal with a single button click from the weekly menu.
-- **Active Token Display**: A dedicated section on the dashboard prominently displays all unused QR codes for the current day.
-- **Meal & Point History**: Track a complete history of all registered meals and their status (Used/Not Used).
+This project bridges the gap between students and mess management, providing a single source of truth for all meal-related activities. It is a production-ready solution designed for reliability, ease of use, and deployment on modern cloud infrastructure.
 
-### 🧑‍💼 For Administrators
-- **Secure Admin Login**: A separate, secure login for mess administrators (`admin` / `adminpass`).
-- **Live QR Code Scanner**: A real-time, camera-based QR code scanner for instant and error-free token verification.
-- **Manual Verification Backup**: An option to manually type in a token ID if the scanner fails.
-- **Daily Registration Overview**: A dashboard that lists all students who have registered for meals on the current day and their token status.
+## 🚀 Live Demo
 
-## 🛠️ Tech Stack
-- **Backend**: Python with the Flask web framework.
-- **Frontend**: HTML5, CSS3, and JavaScript with Bootstrap 5.
-- **Database**: MongoDB (cloud-hosted via MongoDB Atlas).
-- **QR Code Generation**: `qrcode` Python library.
-- **QR Code Scanning**: `html5-qrcode` JavaScript library.
-- **Deployment Target**: Vercel
+**You can access the live, deployed application here:**
 
-## ⚙️ How to Run Locally
-
-### Prerequisites
-- Python 3.9+
-- Git
-- Code editor (e.g. VS Code)
-- Free MongoDB Atlas account
-
-### Step 1: Set Up MongoDB Atlas
-1. Create a Free M0 Cluster on [MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
-2. Add a database user and whitelist access from `0.0.0.0/0`.
-3. Get your connection string (e.g. `mongodb+srv://<user>:<password>@cluster0.mongodb.net/...`).
-
-### Step 2: Clone and Set Up the Project
-
-```bash
-git clone https://github.com/YourGitHubUsername/servesmart.git
-cd servesmart
-```
-
-#### Create Virtual Environment
-
-Windows:
-```bash
-py -m venv venv
-venv\Scripts\activate
-```
-
-macOS/Linux:
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-#### Install Requirements
-```bash
-pip install -r requirements.txt
-```
-
-#### Create `.env` file
-Create a `.env` file in the root directory and paste the following:
-
-```env
-MONGO_URI="your-mongodb-uri-here"
-SECRET_KEY="your-random-secret-key"
-```
-
-### Step 3: Run the App
-
-```bash
-python app.py
-```
-
-Visit `http://127.0.0.1:5000` in your browser.
-
-## 🚀 Deployment on Vercel
-
-1. Push your code to GitHub.
-2. Go to [vercel.com](https://vercel.com/) and import the project.
-3. In your project settings, add `MONGO_URI` and `SECRET_KEY` environment variables.
-4. Click **Deploy**.
-
-That's it — Vercel will handle everything for you! 🎉
+### **[https://servesmart-app.onrender.com](https://servesmart-app.onrender.com)**
 
 ---
 
-© 2025 ServeSmart | Built with ❤️ by students for students
+## 🔑 Login Credentials
+
+You can use the following sample credentials to test the application:
+
+### 🧑‍💼 Admin Account
+- **Roll Number:** `admin`
+- **Password:** `adminpass`
+
+### 🎓 Student Account
+- **Roll Number:** `2022bcs0095`
+- **Password:** `pspk`
+
+You can also register your own new student accounts.
+
+---
+
+## ✨ Core Features
+
+### For Students
+- **Simple Registration & Login:** Secure authentication using unique college roll numbers.
+- **Point-Based System:** Students start with a point balance that is used for meal registrations.
+- **Instant QR Code Generation:** Upon successful meal registration, a unique QR code token is instantly generated and displayed in a pop-up modal without reloading the page.
+- **Active Token Display:** An "Active Tokens" section on the dashboard prominently displays all unused QR codes for the current day, ensuring a student can never lose their token.
+- **Meal & Point History:** Track a complete history of all registered meals and their status (Used/Not Used).
+
+### For Administrators
+- **Secure Admin Login:** A separate, secure login for mess administrators.
+- **Three-Tier Verification System:** A robust and flexible system for verifying meal tokens:
+    1.  **Live QR Code Scanner:** The primary method is a real-time, camera-based QR code scanner for instant and error-free token verification.
+    2.  **Manual Token Entry:** A backup option to manually type in a token ID if the scanner fails or is unavailable.
+    3.  **One-Click List Verification:** A third backup allowing the admin to find a student in the daily registration list and verify their meal with a single click.
+- **Daily Registration Overview:** A dashboard that lists all students who have registered for meals on the current day, their token ID, and its current status (Verified/Not Verified).
+
+---
+
+## 🛠️ Tech Stack
+
+- **Backend:** **Python** with the **Flask** web framework.
+- **Database:** **PostgreSQL** (hosted on Vercel Postgres).
+- **ORM:** **Flask-SQLAlchemy** for elegant and robust database interaction.
+- **Frontend:** **HTML5**, **CSS3**, and **JavaScript** with the **Bootstrap 5** framework for a clean, responsive UI.
+- **Deployment:** The backend application is hosted on **Render**.
+- **QR Code Generation:** `qrcode` Python library.
+- **QR Code Scanning:** `html5-qrcode` JavaScript library for live camera scanning.
+
+---
+
+## ⚙️ How to Run Locally
+
+Follow these steps to get a copy of the project up and running on your own computer.
+
+### Prerequisites
+
+- Python 3.9+
+- Git
+- A free Vercel account (to host the Postgres database)
+
+### 1. Set Up the Database on Vercel
+
+This project uses a cloud-hosted Postgres database from Vercel.
+
+1.  **Create a Vercel Postgres Database:** Log in to Vercel, go to the "Storage" tab, and create a new, free Postgres database.
+2.  **Get Your Connection String:** In the database settings, go to the ".env.local" or "Connection Strings" tab and copy the `POSTGRES_URL`. This is your database address and password.
+
+### 2. Set Up the Project Locally
+
+1.  **Clone the Repository:**
+    ```bash
+    git clone https://github.com/pspk2004/ServeSmart.git
+    cd ServeSmart
+    ```
+
+2.  **Create and Activate a Virtual Environment:**
+    ```bash
+    # For Windows
+    py -m venv venv
+    venv\Scripts\activate
+
+    # For macOS / Linux
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
+
+3.  **Install Dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+4.  **Create Your `.env` File:** Create a file named `.env` in the root folder and add your secret keys.
+    ```
+    # Paste the database URL you copied from Vercel
+    POSTGRES_URL="postgres://default:YourPassword...@..."
+
+    # Create a long, random string for security
+    SECRET_KEY="a-very-long-and-random-secret-key"
+    ```
+
+5.  **Initialize the Database:** This is a one-time setup command to create your tables.
+    ```bash
+    python setup_db.py
+    ```
+
+6.  **Run the Application:**
+    ```bash
+    python run.py
+    ```
+    Open your browser and go to `http://127.0.0.1:5000`.
