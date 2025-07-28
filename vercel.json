@@ -1,18 +1,18 @@
 {
   "builds": [
     {
-      "src": "app.py",
+      "src": "run.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/static/(.*)",
-      "dest": "static/$1"
+      "dest": "/static/$1"  // <-- THE FIX IS ADDING THE FORWARD SLASH HERE
     },
     {
       "src": "/(.*)",
-      "dest": "app.py"
+      "dest": "run.py"
     }
   ]
 }
