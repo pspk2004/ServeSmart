@@ -1,11 +1,102 @@
+/* --- ServeSmart Lovable Design System --- */
+
+/* 1. Define the Color Palette and Fonts using CSS Variables */
+:root {
+    --primary-color: #4A90E2; /* A modern, friendly blue */
+    --background-color: #F8F9FA; /* A very light, soft gray */
+    --card-background: #FFFFFF;
+    --success-color: #50E3C2; /* A vibrant, positive green */
+    --danger-color: #D0021B;
+    --text-color: #333333;
+    --text-muted-color: #6c757d;
+    --border-color: #dee2e6;
+    
+    --font-heading: 'Poppins', sans-serif;
+    --font-body: 'Inter', sans-serif;
+
+    --border-radius: 0.75rem; /* Softer, more modern rounded corners */
+    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* A soft, subtle shadow */
+}
+
+/* 2. Apply the Foundation Styles */
 body {
-    background-color: #f8f9fa;
+    background-color: var(--background-color);
+    font-family: var(--font-body);
+    color: var(--text-color);
 }
 
+h1, h2, h3, h4, h5, h6, .navbar-brand {
+    font-family: var(--font-heading);
+    font-weight: 700;
+}
+
+/* 3. Style the Components */
+
+/* Navbar */
+.navbar {
+    background-color: var(--primary-color);
+}
 .navbar-brand {
-    font-weight: bold;
+    font-size: 1.5rem;
 }
 
+/* Cards (The core of our new layout) */
 .card {
-    border-radius: 0.75rem;
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-5px); /* A subtle lift effect on hover */
+}
+
+.card-header {
+    background-color: var(--card-background);
+    border-bottom: 1px solid var(--border-color);
+    font-family: var(--font-heading);
+    font-weight: 600;
+}
+
+/* Buttons */
+.btn {
+    border-radius: 0.5rem;
+    font-weight: 600;
+    padding: 0.6rem 1.2rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+.btn-primary:hover {
+    filter: brightness(110%);
+}
+
+.btn-success {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+    color: #fff;
+}
+.btn-success:hover {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+    filter: brightness(110%);
+}
+
+/* Forms */
+.form-control, .form-select {
+    border-radius: 0.5rem;
+}
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(74, 144, 226, 0.25);
+}
+
+/* Badges */
+.badge {
+    font-size: 0.8rem;
+    padding: 0.5em 0.75em;
 }
