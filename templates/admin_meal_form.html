@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% block title %}{{ title }}{% endblock %}
-
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8">
@@ -18,15 +17,15 @@
             <div class="mb-3">
                 <label for="meal_type" class="form-label">Meal Type</label>
                 <select class="form-select" id="meal_type" name="meal_type" required>
-                    {% set types = ['Breakfast', 'Lunch', 'Dinner'] %}
+                    {% set types = ['Breakfast', 'Lunch', 'Snacks', 'Dinner'] %}
                     {% for type in types %}
                         <option value="{{ type }}" {% if meal and meal.meal_type == type %}selected{% endif %}>{{ type }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div class="mb-3">
-                <label for="item_name" class="form-label">Item Name</label>
-                <input type="text" class="form-control" id="item_name" name="item_name" value="{{ meal.item_name if meal else '' }}" required>
+                <label for="item_name" class="form-label">Item Name(s)</label>
+                <textarea class="form-control" id="item_name" name="item_name" rows="3" required>{{ meal.item_name if meal else '' }}</textarea>
             </div>
             <div class="mb-3">
                 <label for="cost" class="form-label">Cost</label>

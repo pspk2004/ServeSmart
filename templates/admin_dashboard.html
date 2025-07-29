@@ -5,9 +5,18 @@
     <h1 class="h2">Admin Dashboard</h1>
 </div>
 
-<!-- ==================== LIVE QR SCANNER (Primary) ==================== -->
+<!-- Admin Controls Section -->
+<div class="card mb-4">
+    <div class="card-header">Admin Controls</div>
+    <div class="card-body">
+        <a href="{{ url_for('routes.manage_schedule') }}" class="btn btn-outline-primary">Manage Weekly Schedule</a>
+        <a href="{{ url_for('routes.manage_students') }}" class="btn btn-outline-secondary">View Registered Students</a>
+    </div>
+</div>
+
+<!-- QR Scanner and Verification -->
 <div class="card mb-4 border-primary">
-    <div class="card-header bg-primary text-white"><strong>1. Live QR Code Scanner</strong></div>
+    <div class="card-header bg-primary text-white"><strong>Live QR Code Scanner</strong></div>
     <div class="card-body text-center">
         <div id="qr-reader" style="width: 100%; max-width: 400px; margin: 0 auto;"></div>
         <div id="verification-status-alert" class="alert mt-3" style="display: none;"></div>
@@ -17,10 +26,8 @@
         </div>
     </div>
 </div>
-
-<!-- ==================== MANUAL TOKEN ENTRY (Backup 1) ==================== -->
 <div class="card mb-4">
-    <div class="card-header"><strong>2. Manual Token Entry (Backup)</strong></div>
+    <div class="card-header">Manual Token Entry (Backup)</div>
     <div class="card-body">
         <form id="verify-token-form">
             <div class="mb-3">
@@ -33,19 +40,10 @@
     </div>
 </div>
 
-<!-- ==================== DAILY REGISTRATIONS (Backup 2) ==================== -->
-<h3 class="mt-5">3. Today's Meal Registrations</h3>
+<h3 class="mt-5">Today's Meal Registrations</h3>
 <div class="table-responsive">
     <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Student Name</th>
-                <th>Roll Number</th>
-                <th>Meal Item</th>
-                <th>Token</th>
-                <th>Action</th>
-            </tr>
-        </thead>
+        <thead><tr><th>Student Name</th><th>Roll Number</th><th>Meal Item</th><th>Status</th></tr></thead>
         <tbody>
             {% if registrations %}
                 {% for reg in registrations %}
@@ -53,30 +51,16 @@
                     <td>{{ reg.student.name }}</td>
                     <td>{{ reg.student.roll_number }}</td>
                     <td>{{ reg.meal.item_name }}</td>
-                    <td><code>{{ reg.token }}</code></td>
-                    <td>
-                        {% if not reg.is_used %}
-                            <!-- THIS IS THE NEW ONE-CLICK VERIFY BUTTON -->
-                            <button class="btn btn-sm btn-outline-success verify-from-list-btn" data-token="{{ reg.token }}">
-                                Verify
-                            </button>
-                        {% else %}
-                            <span class="badge bg-success">Verified</span>
-                        {% endif %}
-                    </td>
+                    <td><span class="badge {{ 'bg-success' if reg.is_used else 'bg-warning text-dark' }}">{{ 'Used' if reg.is_used else 'Not Used' }}</span></td>
                 </tr>
                 {% endfor %}
             {% else %}
-                <tr>
-                    <td colspan="5" class="text-center">No meal registrations for today yet.</td>
-                </tr>
+                <tr><td colspan="4" class="text-center">No meal registrations for today yet.</td></tr>
             {% endif %}
         </tbody>
     </table>
 </div>
 {% endblock %}
-
-<!-- This script block is crucial for the scanner to work -->
 {% block scripts %}
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 {% endblock %}
