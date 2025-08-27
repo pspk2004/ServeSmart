@@ -18,7 +18,7 @@ This project bridges the gap between students and mess management, providing a s
 
 **You can access the live, deployed application here:**
 
-### **[https://servesmart-app.onrender.com](https://servesmart-app.onrender.com)**
+### **[https://serve-smart-teal.vercel.app/](https://serve-smart-teal.vercel.app/)**
 
 ---
 
@@ -60,10 +60,11 @@ You can also register your own new student accounts.
 ## 🛠️ Tech Stack
 
 - **Backend:** **Python** with the **Flask** web framework.
-- **Database:** **PostgreSQL** (hosted on Vercel Postgres).
+- **Database:** **PostgreSQL** (hosted on **Vercel Postgres**).
 - **ORM:** **Flask-SQLAlchemy** for elegant and robust database interaction.
 - **Frontend:** **HTML5**, **CSS3**, and **JavaScript** with the **Bootstrap 5** framework for a clean, responsive UI.
-- **Deployment:** The backend application is hosted on **Render**.
+- **Deployment:** The application is hosted on **Vercel**.
+- **Static File Serving:** **WhiteNoise** for robust production file serving.
 - **QR Code Generation:** `qrcode` Python library.
 - **QR Code Scanning:** `html5-qrcode` JavaScript library for live camera scanning.
 
@@ -71,20 +72,20 @@ You can also register your own new student accounts.
 
 ## ⚙️ How to Run Locally
 
-Follow these steps to get a copy of the project up and running on your own computer.
+Follow these steps to get a copy of the project up and running on your own computer for development and testing.
 
 ### Prerequisites
 
 - Python 3.9+
-- Git
-- A free Vercel account (to host the Postgres database)
+- A code editor like Visual Studio Code.
+- A free Vercel account (to host the Postgres database).
 
 ### 1. Set Up the Database on Vercel
 
-This project uses a cloud-hosted Postgres database from Vercel.
+This project is designed to connect to a Vercel Postgres database, which is free and easy to set up.
 
-1.  **Create a Vercel Postgres Database:** Log in to Vercel, go to the "Storage" tab, and create a new, free Postgres database.
-2.  **Get Your Connection String:** In the database settings, go to the ".env.local" or "Connection Strings" tab and copy the `POSTGRES_URL`. This is your database address and password.
+1.  **Create a Vercel Postgres Database:** Log in to your Vercel account, go to the "Storage" tab, and create a new, free Postgres database.
+2.  **Get Your Connection String:** In the database settings, go to the ".env.local" or "Connection Strings" tab and copy the `POSTGRES_URL`. This is your complete database address and password.
 
 ### 2. Set Up the Project Locally
 
@@ -110,22 +111,18 @@ This project uses a cloud-hosted Postgres database from Vercel.
     pip install -r requirements.txt
     ```
 
-4.  **Create Your `.env` File:** Create a file named `.env` in the root folder and add your secret keys.
+4.  **Create Your `.env` File:** Create a file named `.env` in the root folder and add your secret keys. **This file should not be committed to Git.**
     ```
-    # Paste the database URL you copied from Vercel
-    POSTGRES_URL="postgres://default:YourPassword...@..."
+    # Paste the database URL you copied from Vercel.
+    # Make sure it starts with "postgresql://"
+    POSTGRES_URL="postgresql://default:YourPassword...@..."
 
     # Create a long, random string for security
-    SECRET_KEY="a-very-long-and-random-secret-key"
+    SECRET_KEY="a-very-long-and-random-secret-key-for-local-dev"
     ```
 
-5.  **Initialize the Database:** This is a one-time setup command to create your tables.
+5.  **Run the Application:** The application is self-initializing. The first time it runs, it will create all the necessary tables and seed the data.
     ```bash
-    python setup_db.py
-    ```
-
-6.  **Run the Application:**
-    ```bash
-    python run.py
+    python app.py
     ```
     Open your browser and go to `http://127.0.0.1:5000`.
